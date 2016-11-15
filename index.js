@@ -18,6 +18,7 @@ const SceneComponent = require('./SceneComponent');
 const DefaultTabBar = require('./DefaultTabBar');
 const ScrollableTabBar = require('./ScrollableTabBar');
 
+const I18nManager = ReactNative.I18nManager;
 
 const ScrollableTabView = React.createClass({
   mixins: [TimerMixin, ],
@@ -51,6 +52,7 @@ const ScrollableTabView = React.createClass({
       scrollWithoutAnimation: false,
       locked: false,
       prerenderingSiblingsNumber: 0,
+      xMultiplier: I18nManager.isRTL ? -1 : 1
     };
   },
 
@@ -76,7 +78,7 @@ const ScrollableTabView = React.createClass({
   goToPage(pageNumber) {
     const offset = pageNumber * this.state.containerWidth;
     if (this.scrollView) {
-      this.scrollView.scrollTo({x: offset, y: 0, animated: !this.props.scrollWithoutAnimation, });
+      this.scrollView.scrollTo({x: this.props.xMultiplier * offset, y: 0, animated: !this.props.scrollWithoutAnimation, });
     }
 
     const currentPage = this.state.currentPage;
@@ -136,7 +138,7 @@ const ScrollableTabView = React.createClass({
       contentOffset={{ x: this.props.initialPage * this.state.containerWidth, }}
       ref={(scrollView) => { this.scrollView = scrollView; }}
       onScroll={(e) => {
-        const offsetX = e.nativeEvent.contentOffset.x;
+        const offsetX = this.props.xMultiplier * e.nativeEvent.contentOffset.x;
         this._updateScrollValue(offsetX / this.state.containerWidth);
       }}
       onMomentumScrollBegin={this._onMomentumScrollBeginAndEnd}
