@@ -9,7 +9,9 @@ const {
   View,
   Animated,
   ScrollView,
+  Platform,
   StyleSheet,
+  ViewPagerAndroid,
   InteractionManager,
 } = ReactNative;
 const TimerMixin = require('react-timer-mixin');
@@ -52,7 +54,7 @@ const ScrollableTabView = React.createClass({
       scrollWithoutAnimation: false,
       locked: false,
       prerenderingSiblingsNumber: 0,
-      xMultiplier: I18nManager.isRTL ? -1 : 1
+      xMultiplier: I18nManager.isRTL ? 1 : 1
     };
   },
 
@@ -76,10 +78,25 @@ const ScrollableTabView = React.createClass({
   },
 
   goToPage(pageNumber) {
-    const offset = pageNumber * this.state.containerWidth;
-    if (this.scrollView) {
-      this.scrollView.scrollTo({x: this.props.xMultiplier * offset, y: 0, animated: !this.props.scrollWithoutAnimation, });
-    }
+      if (Platform.OS === 'ios') {
+          const offset = pageNumber * this.state.containerWidth;
+          if (this.scrollView) {
+              this.scrollView.scrollTo({x: offset, y: 0, animated: !this.props.scrollWithoutAnimation, });
+          }
+      } else {
+          if (this.scrollView) {
+              if (this.props.scrollWithoutAnimation) {
+                  this.scrollView.setPageWithoutAnimation(pageNumber);
+              } else {
+                  this.scrollView.setPage(pageNumber);
+              }
+          }
+      }
+
+    // const offset = pageNumber * this.state.containerWidth;
+    // if (this.scrollView) {
+    //   this.scrollView.scrollTo({x: this.props.xMultiplier * offset, y: 0, animated: !this.props.scrollWithoutAnimation, });
+    // }
 
     const currentPage = this.state.currentPage;
     this.updateSceneKeys({
@@ -131,6 +148,7 @@ const ScrollableTabView = React.createClass({
 
   renderScrollableContent() {
     const scenes = this._composeScenes();
+    if (Platform.OS === 'ios') {
     return <ScrollView
       horizontal
       pagingEnabled
@@ -154,6 +172,24 @@ const ScrollableTabView = React.createClass({
       >
       {scenes}
     </ScrollView>;
+    } else {
+        return <ViewPagerAndroid
+        key={this._children().length}
+        style={styles.scrollableContentAndroid}
+        initialPage={this.props.initialPage}
+        onPageSelected={this._updateSelectedPage}
+        keyboardDismissMode="on-drag"
+        scrollEnabled={!this.props.locked && !I18nManager.isRTL}
+        onPageScroll={(e) => {
+          const { offset, position, } = e.nativeEvent;
+          this._updateScrollValue(position + offset);
+        }}
+        ref={(scrollView) => { this.scrollView = scrollView; }}
+        {...this.props.contentProps}
+      >
+        {scenes}
+      </ViewPagerAndroid>;
+    }
   },
 
   _composeScenes() {
